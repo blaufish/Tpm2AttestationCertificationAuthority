@@ -1,7 +1,5 @@
 package blaufish.test.tpm2;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.security.cert.CertificateException;
@@ -14,15 +12,20 @@ import org.junit.jupiter.api.Test;
 
 class Tpm2AttestationCATest {
 	private static final String MANUFACTURER_ECC_CERT = "test/OptigaEccMfrCA022.crt";
+	private static final String MANUFACTURER_RSA_CERT = "test/OptigaRsaMfrCA022.crt";
 	private static final String ENDORSEMENT_KEY_ECC_CERT = "test/nvread.1c000a.cert";
+	private static final String ENDORSEMENT_KEY_RSA_CERT = "test/nvread.1c0002.cert";
 	Tpm2AttestationCA eccCa;
+	Tpm2AttestationCA rsaCa;
 	CertificateFactory certificateFactory;
 
 	@BeforeEach
 	void before() throws Exception {
 		certificateFactory = CertificateFactory.getInstance("X.509");
-		X509Certificate manufacturerCertificate = loadCertificate(MANUFACTURER_ECC_CERT);
-		eccCa = Tpm2AttestationCA.build(manufacturerCertificate);
+		X509Certificate manufacturerEccCertificate = loadCertificate(MANUFACTURER_ECC_CERT);
+		eccCa = Tpm2AttestationCA.build(manufacturerEccCertificate);
+		X509Certificate manufacturerRsaCertificate = loadCertificate(MANUFACTURER_RSA_CERT);
+		rsaCa = Tpm2AttestationCA.build(manufacturerRsaCertificate);
 	}
 
 	private X509Certificate loadCertificate(String certificateFile) throws CertificateException, FileNotFoundException {
@@ -32,16 +35,16 @@ class Tpm2AttestationCATest {
 	@AfterEach
 	void after() {
 		eccCa = null;
+		rsaCa = null;
 		certificateFactory = null;
 	}
 
-	@Test
-	void testBuild() {
-		assertNotNull(eccCa);
-	}
-
-	@Test
-	void testEKVerify() throws Exception {
+	@Test()
+	void testEKVerifyEcc() throws Exception {
 		eccCa.verifyEKCert(loadCertificate(ENDORSEMENT_KEY_ECC_CERT));
+	}
+	@Test
+	void testEKVerifyRsa() throws Exception {
+		rsaCa.verifyEKCert(loadCertificate(ENDORSEMENT_KEY_RSA_CERT));
 	}
 }
