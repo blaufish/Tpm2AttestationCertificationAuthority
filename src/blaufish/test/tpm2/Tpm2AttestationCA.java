@@ -14,27 +14,36 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 import javax.crypto.BadPaddingException;
+import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
+import javax.crypto.spec.SecretKeySpec;
+
+import org.bouncycastle.operator.OperatorCreationException;
 
 import gov.niarl.his.privacyca.Tpm2Algorithm;
 import gov.niarl.his.privacyca.Tpm2Credential;
 import gov.niarl.his.privacyca.Tpm2Utils;
 
 public class Tpm2AttestationCA {
-	X509Certificate manufacturerCertificate;
-	SecureRandom sr;
-
+	private X509Certificate authorityCertificate;
+	private X509Certificate manufacturerCertificate;
+	private CertTool certificateTool;
 	public static Tpm2AttestationCA build(X509Certificate manufacturerCertificate)
-			throws CertificateException, FileNotFoundException {
-		Tpm2AttestationCA ca = new Tpm2AttestationCA(manufacturerCertificate);
+			throws CertificateException, FileNotFoundException, NoSuchAlgorithmException, NoSuchProviderException, OperatorCreationException {
+
+        CertTool ct = CertTool.build();
+
+		Tpm2AttestationCA ca = new Tpm2AttestationCA(manufacturerCertificate, ct.generateCert(25), ct);
 		return ca;
 	}
 
-	private Tpm2AttestationCA(X509Certificate manufacturerCertificate) {
+	
+	private Tpm2AttestationCA(X509Certificate manufacturerCertificate, X509Certificate authorityCertificate, CertTool ct) {
 		this.manufacturerCertificate = manufacturerCertificate;
-		this.sr = new SecureRandom();
+		this.authorityCertificate = authorityCertificate;
+		this.certificateTool = ct;
 	};
 
 	void verifyEKCert(X509Certificate ekcert) throws InvalidKeyException, CertificateException,
@@ -70,7 +79,52 @@ public class Tpm2AttestationCA {
 		return bytes;
 	}
 
-	private int tpmlength(byte[] blob) {
+	private static int tpmlength(byte[] blob) {
 		return (blob[0] & 0xFF) | ((blob[1] & 0xFF) << 8);
+	}
+	
+	TupleForTpm generateAkCert(X509Certificate ekcert, byte[] ak_pub, byte[] ak_objectname) throws OperatorCreationException, CertificateException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, SignatureException, InvalidAlgorithmParameterException, ShortBufferException, IOException {
+		byte[] aes_key = new byte[16];
+		byte[] unencrypted_cert = certificateTool.generateLeafCert(1, "CN=test", encode_tpmt_public_to_asn1(ak_pub)).getEncoded();
+		SecureRandom random = new SecureRandom();
+		random.nextBytes(aes_key);
+		SecretKeySpec key = new SecretKeySpec(aes_key, "AES");
+        Cipher cipher = Cipher.getInstance("AES/CCM/NoPadding", "BC");
+		cipher.init(Cipher.ENCRYPT_MODE, key);
+		byte[] encrypted_cert = cipher.doFinal(unencrypted_cert);
+		//encrypt to the proof of possession
+		Tpm2Credential cred = makeCredential(ekcert, aes_key, ak_objectname);
+		byte[] formatted_cred = convertToTpm2Tools(cred);
+		return new TupleForTpm(formatted_cred, encrypted_cert);		
+	}
+	private byte[] encode_tpmt_public_to_asn1(byte[] ak_pub) {
+		/* https://dguerriblog.wordpress.com/2016/03/03/tpm2-0-and-openssl-on-linux-2/ */
+		byte[] asn1header = {0x30, (byte)0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, (byte)0x86,
+				0x48, (byte)0x86, (byte) 0xf7, 0x0d, 0x01, 0x01, 0x01, 0x05, 0x00, 0x03, (byte)0x82, 
+				0x01, 0x0f, 0x00, 0x30, (byte) 0x82, 0x01, 0x0a, 0x02, (byte) 0x82, 0x01, 0x01, 0x00};
+		byte[] asn1midHeaderAndExponent65537 = {0x02, 03, 0x01, 0x00, 0x01};
+		int asn1bloblength = asn1header.length + 256 + asn1midHeaderAndExponent65537.length;
+		byte[] blob = new byte[asn1bloblength];
+		ByteBuffer buf = ByteBuffer.wrap(blob);
+		buf.put(asn1header);
+		//FIXME 0x1A is a tpm or tool-specific hack. the blog got 102 instead due to different TPMT_PUBLIC structures!!! 
+		buf.put(ak_pub, 0x1A, 256);
+		buf.put(asn1midHeaderAndExponent65537);
+		return blob;
+	}
+	static class TupleForTpm {
+		public TupleForTpm(byte[] tpmCredential, byte[] encryptedAkCertificate) {
+			super();
+			this.tpmCredential = tpmCredential;
+			this.encryptedAkCertificate = encryptedAkCertificate;
+		}
+		final private byte[] tpmCredential;
+		final private byte[] encryptedAkCertificate;
+		public byte[] getTpmCredential() {
+			return tpmCredential;
+		}
+		public byte[] getEncryptedAkCertificate() {
+			return encryptedAkCertificate;
+		}
 	}
 }

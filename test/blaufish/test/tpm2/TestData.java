@@ -6,10 +6,10 @@ public class TestData {
 	public static byte[] getAkRsaObjectName() {
 		return copy(ak_rsa_object_name);
 	}
-	byte[] getAkRsaName() {
+	static byte[] getAkRsaName() {
 		return copy(ak_rsa_name);
 	}
-	byte[] getAkRsaPub() {
+	static byte[] getAkRsaPub() {
 		return copy(ak_rsa_pub);
 	}
 	private static byte[] copy(byte[] blob) {

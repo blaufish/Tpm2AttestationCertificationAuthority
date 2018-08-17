@@ -11,6 +11,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import blaufish.test.tpm2.Tpm2AttestationCA.TupleForTpm;
 import gov.niarl.his.privacyca.Tpm2Credential;
 
 class Tpm2AttestationCATest {
@@ -63,14 +64,18 @@ class Tpm2AttestationCATest {
 		}
 
 		@Test
-		void testEKVerifyRsa() throws Exception {
+		void testEKVerify() throws Exception {
 			ca.verifyEKCert(loadCertificate(ENDORSEMENT_KEY_RSA_CERT));
 		}
 		@Test
 		void testMakeCredential() throws Exception {
 			byte[] nullCredentials = "1234568".getBytes() ;
 		    Tpm2Credential creds = ca.makeCredential(loadCertificate(ENDORSEMENT_KEY_RSA_CERT), nullCredentials, TestData.getAkRsaObjectName());
-		    System.out.println(Hexdump.hexdump("tpm2tools formated credials file: " , ca.convertToTpm2Tools(creds) ) );
+		    //System.out.println(Hexdump.hexdump("tpm2tools formated credials file: " , ca.convertToTpm2Tools(creds) ) );
+		}
+		@Test
+		void testGenerateAkCert() throws Exception {
+			TupleForTpm foo = ca.generateAkCert(loadCertificate(ENDORSEMENT_KEY_RSA_CERT), TestData.getAkRsaPub(), TestData.getAkRsaObjectName());
 		}
 
 	}
