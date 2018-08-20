@@ -1,5 +1,7 @@
 package blaufish.test.tpm2;
 
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.security.cert.CertificateException;
@@ -72,10 +74,14 @@ class Tpm2AttestationCATest {
 			byte[] nullCredentials = "1234568".getBytes() ;
 		    Tpm2Credential creds = ca.makeCredential(loadCertificate(ENDORSEMENT_KEY_RSA_CERT), nullCredentials, TestData.getAkRsaObjectName());
 		    //System.out.println(Hexdump.hexdump("tpm2tools formated credials file: " , ca.convertToTpm2Tools(creds) ) );
+		    assertNotNull(creds.getCredential());
+		    assertNotNull(creds.getSecret());
 		}
 		@Test
 		void testGenerateAkCert() throws Exception {
-			TupleForTpm foo = ca.generateAkCert(loadCertificate(ENDORSEMENT_KEY_RSA_CERT), TestData.getAkRsaPub(), TestData.getAkRsaObjectName());
+			TupleForTpm packageForAuthenticatedTPM = ca.generateAkCert(loadCertificate(ENDORSEMENT_KEY_RSA_CERT), TestData.getAkRsaPub(), TestData.getAkRsaObjectName());
+			assertNotNull(packageForAuthenticatedTPM.getEncryptedAkCertificate());
+			assertNotNull(packageForAuthenticatedTPM.getTpmCredential());
 		}
 
 	}

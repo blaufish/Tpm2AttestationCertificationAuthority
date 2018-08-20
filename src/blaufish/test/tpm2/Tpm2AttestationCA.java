@@ -38,13 +38,16 @@ public class Tpm2AttestationCA {
 		Tpm2AttestationCA ca = new Tpm2AttestationCA(manufacturerCertificate, ct.generateCert(25), ct);
 		return ca;
 	}
-
 	
 	private Tpm2AttestationCA(X509Certificate manufacturerCertificate, X509Certificate authorityCertificate, CertTool ct) {
 		this.manufacturerCertificate = manufacturerCertificate;
 		this.authorityCertificate = authorityCertificate;
 		this.certificateTool = ct;
 	};
+
+	public X509Certificate getAuthorityCertificate() {
+		return authorityCertificate;
+	}
 
 	void verifyEKCert(X509Certificate ekcert) throws InvalidKeyException, CertificateException,
 			NoSuchAlgorithmException, NoSuchProviderException, SignatureException {
@@ -112,6 +115,7 @@ public class Tpm2AttestationCA {
 		buf.put(asn1midHeaderAndExponent65537);
 		return blob;
 	}
+
 	static class TupleForTpm {
 		public TupleForTpm(byte[] tpmCredential, byte[] encryptedAkCertificate) {
 			super();
