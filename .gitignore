@@ -1,2 +1,5 @@
 /bin/
 /libs/
+test/temp.akcert.encrypted
+test/temp.ca.cert
+test/temp.credential
