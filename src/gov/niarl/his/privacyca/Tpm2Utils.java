@@ -16,6 +16,7 @@ import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.PublicKey;
+import java.security.SecureRandom;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.MGF1ParameterSpec;
@@ -86,7 +87,6 @@ public class Tpm2Utils {
         }
     }
 
-    @SuppressWarnings("ConvertToStringSwitch")
     public static Tpm2Credential makeCredential(PublicKey key, Tpm2Algorithm.Symmetric symmetricAlgorithm, int symKeySizeInBits, Tpm2Algorithm.Hash nameAlgorithm, byte[] credential, byte[] objectName)
             throws NoSuchAlgorithmException,
             NoSuchPaddingException,
@@ -123,7 +123,9 @@ public class Tpm2Utils {
         ByteBuffer encryptedSeed = ByteBuffer.allocate(Tpm2Credential.TPM2B_ENCRYPTED_SECRET_SIZE);
         switch (key.getAlgorithm()) {
             case "RSA": {
-                byte[] secretData = TpmUtils.createRandomBytes(nameAlgDigestLength);
+                byte[] secretData = new byte[nameAlgDigestLength];
+                SecureRandom sr = new SecureRandom();
+                sr.nextBytes(secretData);
                 seed = secretData;
                 Cipher rsaCipher;
                 Provider bcProvider = new BouncyCastleProvider();
