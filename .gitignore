@@ -1,5 +1,6 @@
 /bin/
 /libs/
+src/blaufish/test/tpm2/Hmac.java
 test/temp.akcert.encrypted
 test/temp.ca.cert
 test/temp.credential
