@@ -64,8 +64,9 @@ public class Tpm2AttestationCACli {
 			System.out.println("ERROR: " + e.getMessage());
 			System.out.println("Usage: " + Tpm2AttestationCACli.class.getCanonicalName());
 			for (String s : expected_arguments) {
-				System.out.println("  " +s +"=value");
+				System.out.println("  " + s + "=value");
 			}
+			System.exit(1);
 			return;
 		}
 		X509Certificate manufacturerCertificate = loadCertificate(cmd.get(ARG_IN_TPM_MANUFACTURER_CERT));
@@ -78,7 +79,5 @@ public class Tpm2AttestationCACli {
 		Files.write(new File(cmd.get(ARG_OUT_TPM_AKCERT_ENCRYPTED)).toPath(), tpmTuple.getEncryptedAkCertificate());
 		Files.write(new File(cmd.get(ARG_OUT_TPM_CREDENTIAL)).toPath(), tpmTuple.getTpmCredential());
 		Files.write(new File(cmd.get(ARG_OUT_CACERT)).toPath(), caCert);
-		
 	}
-
 }

@@ -7,11 +7,12 @@ import java.lang.ProcessBuilder.Redirect;
 import org.junit.jupiter.api.Test;
 
 class Tpm2AttestationCACliTest {
-
 	@Test
-	void test()  throws Exception {
+	void test() throws Exception {
 		ProcessBuilder pb = new ProcessBuilder();
-		pb.command("./test/cli_ca.sh").redirectError(Redirect.INHERIT).redirectOutput(Redirect.INHERIT).start();
+		Process p = pb.command("./test/cli_ca.sh").redirectError(Redirect.INHERIT).redirectOutput(Redirect.INHERIT)
+				.start();
+		p.waitFor();
+		assertEquals(0, p.exitValue());
 	}
-
 }
