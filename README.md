@@ -1,5 +1,30 @@
 # Tpm2AttestationCertificationAuthority
-Test project for Attestation CA, previously referred to as Privacy CA 
+Test project for Attestation CA, previously referred to as Privacy CA.
+
+```
++-----+ ------ ek_rsa.cert --->  +--------------+
+|     | ------ ak_rsa.pub ---->  | Attestation  |
+| T P | ------ ak_rsa.name --->  | Certificate  |
+| R L |                          |  Authority   |
+| U A | <---- credentials -----  |              |
+| S T | <---- ak_cert.enc -----  +--------------+
+| T F |                       
+| E O | ( Decrypt AKCert using TPM.EKpriv / TPM2_ActivateCredential )
+| D R |    
+|   M |    
+| M   |                           +--------------+
+| O   | -------- ak_cert ------>  |    Remote    |
+| D   | ------ tpm2_quote ----->  | Attestation  |
+| U   |                           |    Server    |
+| L   |                           +--------------+
+| E   |
++-----+
+```
+
+Attestation CA is responsible for:
+* Ensuring proof of ownership, i.e. TPMs must authenticate by successfully decrypting the TPM Credential using TPM2_ActivateCredentials.
+* Validating TPM Endorsement Key Certificate against trusted TPM manufacturer. (Optionally, not yet implemented: verify Endorsement Key against trusted list of specific tpm keys)
+* Generating an Authentication Certificate for the TPM's Attestation Key. The certificate should reflect the privacy and identification requirements of the attestation system, and validity etc should be set appropriately.
 
 ## Dependencies
 * Depends on gov.niarl.his.privacyca from opencit. 
@@ -38,5 +63,7 @@ loaded-key:
 ```
 
 ## Bugs and future improvements
-* TPMT_PUBLIC parsing of TPM Authentication Key is, eh, very crude and not portable-
+* TPMT_PUBLIC parsing of TPM Authentication Key is, eh, *very crude* and *not portable*.
+* Whitelisting specific TPMs Endorsement Keys is not yet implemented.
+* Authentication Key Certificates generated does not include anything useful currently.
 * gov.niarl.his.privacyca classes only support RSA, not ECC.
