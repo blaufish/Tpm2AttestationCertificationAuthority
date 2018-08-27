@@ -7,7 +7,6 @@ import java.nio.file.Files;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
 import java.security.cert.X509Certificate;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -24,24 +23,6 @@ public class Tpm2AttestationCACli {
 	static final String ARG_IN_EKCERT = "--in-ekcert";
 	static final String ARG_IN_TPM_MANUFACTURER_CERT = "--in-tpm-manufacturer-cert";
 
-	static Map<String, String> parse(String[] args, Set<String> expected, Set<String> required) {
-		Map<String, String> map = new HashMap<>();
-		for (String arg : args) {
-			String[] split = arg.split("=");
-			if (split.length != 2)
-				throw new IllegalArgumentException("Illegal syntax: " + arg);
-			if (map.containsKey(split[0]))
-				throw new IllegalArgumentException("Repeated argument: " + arg);
-			if (!expected.contains(split[0]))
-				throw new IllegalArgumentException("Unknown argument: " + arg);
-			map.put(split[0], split[1]);
-		}
-		for (String r : required)
-			if (!map.containsKey(r)) {
-				throw new IllegalArgumentException("Missing argument: " + r);
-			}
-		return map;
-	}
 
 	static X509Certificate loadCertificate(String certificateFile) throws CertificateException, FileNotFoundException {
 		return (X509Certificate) CertificateFactory.getInstance("X.509")
@@ -59,7 +40,7 @@ public class Tpm2AttestationCACli {
 		expected_arguments.add(ARG_OUT_TPM_CREDENTIAL);
 		Map<String, String> cmd;
 		try {
-			cmd = parse(args, expected_arguments, expected_arguments);
+			cmd = CliUtil.parse(args, expected_arguments, expected_arguments);
 		} catch (IllegalArgumentException e) {
 			System.out.println("ERROR: " + e.getMessage());
 			System.out.println("Usage: " + Tpm2AttestationCACli.class.getCanonicalName());
