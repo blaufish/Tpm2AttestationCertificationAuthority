@@ -14,11 +14,9 @@ import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
 import javax.crypto.BadPaddingException;
-import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
-import javax.crypto.spec.SecretKeySpec;
 
 import org.bouncycastle.operator.OperatorCreationException;
 
@@ -91,10 +89,7 @@ public class Tpm2AttestationCA {
 		byte[] unencrypted_cert = certificateTool.generateLeafCert(1, "CN=test", encode_tpmt_public_to_asn1(ak_pub)).getEncoded();
 		SecureRandom random = new SecureRandom();
 		random.nextBytes(aes_key);
-		SecretKeySpec key = new SecretKeySpec(aes_key, "AES");
-        Cipher cipher = Cipher.getInstance("AES/CCM/NoPadding", "BC");
-		cipher.init(Cipher.ENCRYPT_MODE, key);
-		byte[] encrypted_cert = cipher.doFinal(unencrypted_cert);
+		byte[] encrypted_cert = AuthenticationKeyCertificateEncryption.encrypt(aes_key, unencrypted_cert);
 		//encrypt to the proof of possession
 		Tpm2Credential cred = makeCredential(ekcert, aes_key, ak_objectname);
 		byte[] formatted_cred = convertToTpm2Tools(cred);
