@@ -1,6 +1,6 @@
+.sw?
 /bin/
 /libs/
+integration-test/temp.*
 src/blaufish/test/tpm2/Hmac.java
-test/temp.akcert.encrypted
-test/temp.ca.cert
-test/temp.credential
+test/temp.*
