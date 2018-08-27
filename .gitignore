@@ -1,4 +1,4 @@
-.sw?
+.*.sw?
 /bin/
 /libs/
 integration-test/temp.*
