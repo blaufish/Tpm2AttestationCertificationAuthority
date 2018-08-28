@@ -26,4 +26,15 @@ blaufish.test.tpm2.Tpm2AttestationCACli \
 
 # Decrypt secret, completing proof of ownership
 sudo -u tss tpm2_activatecredential --tcti device:/dev/tpmrm0 -H 0x81010008 -k 0x81010007 -f temp.credential -o temp.credential.decrypted
+
+# Decrypt TPM's Authentication Key Certificate using secret (decrypted credential)
+java -cp ../bin:../libs/bcpkix-jdk15on-160.jar:../libs/bcprov-jdk15on-160.jar \
+blaufish.test.tpm2.AKCertDecryptCli \
+  --in-credential=temp.credential.decrypted \
+  --in-encrypted-cert=temp.akcert.encrypted \
+  --out-cert=temp.akcert.decrypted
+
+openssl x509 -in temp.akcert.decrypted -inform der -text
+
+# Quotation
 sudo -u tss tpm2_quote --tcti device:/dev/tpmrm0 -k 0x81010008 -l 16,17,18 -q 375D6C8AE683285D09F04264120886CD0C11C156311530E24A4D20F576EBA467 -m temp.quote_rsa.bin
