@@ -37,4 +37,4 @@ blaufish.test.tpm2.AKCertDecryptCli \
 openssl x509 -in temp.akcert.decrypted -inform der -text
 
 # Quotation
-sudo -u tss tpm2_quote --tcti device:/dev/tpmrm0 -k 0x81010008 -l 16,17,18 -q 375D6C8AE683285D09F04264120886CD0C11C156311530E24A4D20F576EBA467 -m temp.quote_rsa.bin
+sudo -u tss tpm2_quote --tcti device:/dev/tpmrm0 -k 0x81010008 -l 16,17,18 -q 375D6C8AE683285D09F04264120886CD0C11C156311530E24A4D20F576EBA467 -m temp.quote_rsa.bin -s temp.quote_rsa.sig
