@@ -6,12 +6,17 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.X509EncodedKeySpec;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -19,6 +24,8 @@ import javax.crypto.NoSuchPaddingException;
 import javax.crypto.ShortBufferException;
 
 import org.bouncycastle.operator.OperatorCreationException;
+
+import com.github.crocs.muni.roca.BrokenKey;
 
 import gov.niarl.his.privacyca.Tpm2Algorithm;
 import gov.niarl.his.privacyca.Tpm2Credential;
@@ -84,17 +91,30 @@ public class Tpm2AttestationCA {
 		return (blob[0] & 0xFF) | ((blob[1] & 0xFF) << 8);
 	}
 	
-	TupleForTpm generateAkCert(X509Certificate ekcert, byte[] ak_pub, byte[] ak_objectname) throws OperatorCreationException, CertificateException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, SignatureException, InvalidAlgorithmParameterException, ShortBufferException, IOException {
+	TupleForTpm generateAkCert(X509Certificate ekcert, byte[] ak_pub, byte[] ak_objectname) throws OperatorCreationException, CertificateException, NoSuchAlgorithmException, NoSuchProviderException, NoSuchPaddingException, InvalidKeyException, IllegalBlockSizeException, BadPaddingException, SignatureException, InvalidAlgorithmParameterException, ShortBufferException, IOException, InvalidKeySpecException {
 		byte[] aes_key = new byte[16];
-		byte[] unencrypted_cert = certificateTool.generateLeafCert(1, "CN=test", encode_tpmt_public_to_asn1(ak_pub)).getEncoded();
+		byte[] ak_public_key_asn1 = encode_tpmt_public_to_asn1(ak_pub);
+		if (BrokenKey.isAffected(ekcert))
+			throw new RuntimeException("ROCA vulnerability detected in EKCert");
+		if (BrokenKey.isAffected(rsaPubKeyFromASN1(ak_public_key_asn1)))
+			throw new RuntimeException("ROCA vulnerability detected in AKPub");
+		byte[] unencrypted_cert = certificateTool.generateLeafCert(1, "CN=test", ak_public_key_asn1).getEncoded();
 		SecureRandom random = new SecureRandom();
 		random.nextBytes(aes_key);
 		byte[] encrypted_cert = AuthenticationKeyCertificateEncryption.encrypt(aes_key, unencrypted_cert);
-		//encrypt to the proof of possession
+		//encrypt to the proof of possession AND verify EKCert trusted.
+		//TODO restructure logic
 		Tpm2Credential cred = makeCredential(ekcert, aes_key, ak_objectname);
 		byte[] formatted_cred = convertToTpm2Tools(cred);
 		return new TupleForTpm(formatted_cred, encrypted_cert);		
 	}
+
+	private RSAPublicKey rsaPubKeyFromASN1(byte[] ak_public_key_asn1)
+			throws InvalidKeySpecException, NoSuchAlgorithmException {
+		PublicKey publicKey = KeyFactory.getInstance("RSA").generatePublic(new X509EncodedKeySpec(ak_public_key_asn1));
+		return (RSAPublicKey) publicKey;
+	}
+
 	private byte[] encode_tpmt_public_to_asn1(byte[] ak_pub) {
 		/* https://dguerriblog.wordpress.com/2016/03/03/tpm2-0-and-openssl-on-linux-2/ */
 		byte[] asn1header = {0x30, (byte)0x82, 0x01, 0x22, 0x30, 0x0d, 0x06, 0x09, 0x2a, (byte)0x86,
